@@ -24,7 +24,7 @@ resource "random_id" "instance_id" {
 }
 
 // A single Google Cloud Engine instance
-resource "change01_global_env_green_google_compute_instance" "default" {
+resource "change01_global_env_google_compute_instance" "default" {
  name         = "flask-vm-${random_id.instance_id.hex}"
  machine_type = "f1-micro"
  zone         = "us-west1-b"
