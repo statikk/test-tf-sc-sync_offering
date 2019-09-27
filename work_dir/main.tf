@@ -1,48 +1,32 @@
-terraform {
-  backend "remote" {
-    hostname = "terraform.com:8443"
-    organization = "my-organization-0"
-    token = "123"
-
-    workspaces {
-      name = "my-workspace-0"
-    }
+provider "aws" {
+  region     = var.region
+  access_key = "${var.scalr_aws_access_key}"
+  secret_key = "${var.scalr_aws_secret_key}"
+}
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-trusty-14.04-amd64-server-*"]
   }
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+  owners = ["099720109477"]
 }
-
-
-// Configure the Google Cloud provider
-provider "google" {
- credentials = "${file("flask-app-876d96137760.json")}"
- project     = "flask-app-244915"
- region      = "europe-west2"
+resource "aws_instance" "test_instance1" {
+  ami                         = data.aws_ami.ubuntu.id
+  instance_type               = var.instance_type
+  subnet_id                   = var.subnet
+  associate_public_ip_address = var.associate_public_ip
+  tags = merge({ "Name" = format("olga-tf-test -> %s -> %s", data.aws_ami.ubuntu.name, timestamp()) }, var.tags)
 }
-
-// Terraform plugin for creating random ids
-resource "random_id" "instance_id" {
- byte_length = 8
+output "instance_id" {
+ value = aws_instance.test_instance1.id
+ sensitive = true
 }
-
-// A single Google Cloud Engine instance
-resource "google_compute_instance" "default" {
- name         = "flask-vm-${random_id.instance_id.hex}"
- machine_type = "f1-micro"
- zone         = "us-west1-b"
-
- boot_disk {
-   initialize_params {
-     image = "debian-cloud/debian-9"
-   }
- }
-
-// Make sure flask is installed on all new instances for later steps
- metadata_startup_script = "sudo apt-get update; sudo apt-get install -yq build-essential python-pip rsync; pip install flask"
-
- network_interface {
-   network = "default"
-
-   access_config {
-     // Include this section to give the VM an external ip address
-   }
- }
+output "public_ip" {
+ value = aws_instance.test_instance1.public_ip
+ description = "srftsfrtrtdrt"
 }
